@@ -1,10 +1,12 @@
 package com.bobocode.basics;
 
 import com.bobocode.basics.util.BaseEntity;
+import com.bobocode.util.ExerciseNotCompletedException;
 import lombok.Data;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 
 /**
@@ -16,9 +18,9 @@ import java.util.function.Predicate;
  * Hint: in some cases you will need to refactor the code, like replace {@link Object} with a generic type. In order
  * cases you will need to add new fields, create new classes, or add new methods. Always try to read java doc and update
  * the code according to it.
+ * <p><p>
+ * <strong>TODO: to get the most out of your learning, <a href="https://www.bobocode.com/learn">visit our website</a></strong>
  * <p>
- * TODO: if you find this exercise valuable and you want to get more like it, <a href="https://www.patreon.com/bobocode">
- *     please support us on Patreon</a>
  *
  * @author Taras Boychuk
  */
@@ -30,7 +32,7 @@ public class CrazyGenerics {
      * @param <T> – value type
      */
     @Data
-    public static class Sourced <T> { // todo: refactor class to introduce type parameter and make value generic
+    public static class Sourced<T> { // todo: refactor class to introduce type parameter and make value generic
         private T value;
         private String source;
     }
@@ -42,7 +44,7 @@ public class CrazyGenerics {
      * @param <T> – actual, min and max type
      */
     @Data
-    public static class Limited <T extends  Number>{
+    public static class Limited<T extends Number> {
         // todo: refactor class to introduce type param bounded by number and make fields generic numbers
         private final T actual;
         private final T min;
@@ -56,9 +58,8 @@ public class CrazyGenerics {
      * @param <T> – source object type
      * @param <R> - converted result type
      */
-    public interface Converter <T, R> { // todo: introduce type parameters
-        // todo: add convert method
-        R convert(T t);
+    public interface Converter<T, R> { // todo: introduce type parameters
+        R convert(T source);
     }
 
     /**
@@ -68,7 +69,7 @@ public class CrazyGenerics {
      *
      * @param <T> – value type
      */
-    public static class MaxHolder <T extends  Comparable<T>> { // todo: refactor class to make it generic
+    public static class MaxHolder<T extends Comparable<T>> { // todo: refactor class to make it generic
         private T max;
 
         public MaxHolder(T max) {
@@ -97,7 +98,7 @@ public class CrazyGenerics {
      *
      * @param <T> – the type of objects that can be processed
      */
-    interface StrictProcessor <T extends Serializable & Comparable<T>> { // todo: make it generic
+    interface StrictProcessor<T extends Serializable & Comparable<T>> { // todo: make it generic
         void process(T obj);
     }
 
@@ -108,7 +109,7 @@ public class CrazyGenerics {
      * @param <T> – a type of the entity that should be a subclass of {@link BaseEntity}
      * @param <C> – a type of any collection
      */
-    interface CollectionRepository<T extends  BaseEntity, C extends Collection<T>> { // todo: update interface according to the javadoc
+    interface CollectionRepository<T extends BaseEntity, C extends Collection<T>> { // todo: update interface according to the javadoc
         void save(T entity);
 
         C getEntityCollection();
@@ -121,7 +122,6 @@ public class CrazyGenerics {
      * @param <T> – a type of the entity that should be a subclass of {@link BaseEntity}
      */
     interface ListRepository<T extends BaseEntity> extends CollectionRepository<T, List<T>> { // todo: update interface according to the javadoc
-
     }
 
     /**
@@ -134,14 +134,15 @@ public class CrazyGenerics {
      *
      * @param <E> a type of collection elements
      */
-    interface ComparableCollection<E> extends Collection<E>, Comparable<Collection<?>> { // todo: refactor it to make generic and provide a default impl of compareTo
+    interface ComparableCollection<E> extends Collection<E>, Comparable<Collection<?>> {// todo: refactor it to make generic and provide a default impl of compareTo
 
-        @Override
-        default int compareTo(Collection<?> o) {
-            if(this.size() == o.size()){
-                return 0;
+        default int compareTo(Collection<?> val) {
+            if (this.size() > val.size()) {
+                return 1;
+            } else if (this.size() < val.size()) {
+                return -1;
             }
-            return this.size() > o.size() ? 1 : -1;
+            return 0;
         }
     }
 
@@ -157,6 +158,7 @@ public class CrazyGenerics {
          * @param list
          */
         public static void print(List<?> list) {
+            // todo: refactor it so the list of any type can be printed, not only integers
             list.forEach(element -> System.out.println(" – " + element));
         }
 
@@ -169,7 +171,7 @@ public class CrazyGenerics {
          * @return true if at least one of the elements has null id
          */
         public static boolean hasNewEntities(Collection<? extends BaseEntity> entities) {
-
+            //throw new ExerciseNotCompletedException(); // todo: refactor parameter and implement method
             return entities.stream().anyMatch(e -> e.getUuid() == null);
         }
 
@@ -183,6 +185,7 @@ public class CrazyGenerics {
          * @return true if all entities fit validation criteria
          */
         public static boolean isValidCollection(Collection<? extends BaseEntity> entities, Predicate<? super BaseEntity> validationPredicate) {
+            //throw new ExerciseNotCompletedException(); // todo: add method parameters and implement the logic
             return entities.stream().allMatch(validationPredicate);
         }
 
@@ -196,9 +199,17 @@ public class CrazyGenerics {
          * @param <T>          entity type
          * @return true if entities list contains target entity more than once
          */
-        public static <T extends  BaseEntity> boolean hasDuplicates(Collection<T> entities, T targetEntity) {
-            Predicate<T> pr = t -> t.getUuid().equals(targetEntity.getUuid());
-            return entities.stream().filter(pr).toList().size() > 1;
+        public static <T extends BaseEntity> boolean hasDuplicates(List<T> entities, T targetEntity) {
+            //throw new ExerciseNotCompletedException(); // todo: update method signature and implement it
+            AtomicInteger aa = new AtomicInteger(0);
+            for (T e : entities) {
+                if (e.getUuid().equals(targetEntity.getUuid())) {
+                    if (aa.incrementAndGet() > 1) {
+                        return true;
+                    }
+                }
+            }
+            return false;
         }
 
         /**
@@ -210,20 +221,15 @@ public class CrazyGenerics {
          * @param <T>        type of elements
          * @return optional max value
          */
-        public static <T> Optional<T> findMax(Iterable<T> elements, Comparator<? super T> comparator) {
-            if (elements == null){
-                return Optional.empty();
-            }
-            if (!elements.iterator().hasNext()){
-                return Optional.empty();
-            }
-            T max = null;
-            for (T t : elements) {
-                if (max == null || comparator.compare(max, t) < 0) {
-                    max = t;
+        // todo: create a method and implement its logic manually without using util method from JDK
+        public static <T> Optional<T> findMax(Iterable<T> elements, Comparator<T> comparator){
+            final List<T> ee = new ArrayList<>(List.of(elements.iterator().next()));
+            elements.forEach(e -> {
+                if (comparator.compare(e , ee.get(0)) > 0){
+                    ee.set(0, e);
                 }
-            }
-            return Optional.of(max);
+            });
+            return Optional.of(ee.get(0));
         }
 
         /**
@@ -238,14 +244,15 @@ public class CrazyGenerics {
          * @param <T>      entity type
          * @return an entity from the given collection that has the max createdOn value
          */
-        public static <T extends  BaseEntity> T findMostRecentlyCreatedEntity(Collection<T> entities){
+        // todo: create a method according to JavaDoc and implement it using previous method
+        public static <T extends BaseEntity> T findMostRecentlyCreatedEntity(Collection<T> entities){
             if (entities == null || entities.isEmpty()){
                 throw new NoSuchElementException();
             }
 
-            return findMax(entities, CREATED_ON_COMPARATOR).get();
+            Comparator<T> comp = Comparator.comparing(BaseEntity::getCreatedOn);
+            return findMax(entities, comp).get();
         }
-        // todo: create a method according to JavaDoc and implement it using previous method
 
         /**
          * An util method that allows to swap two elements of any list. It changes the list so the element with the index
@@ -256,11 +263,13 @@ public class CrazyGenerics {
          * @param i        index of the element to swap
          * @param j        index of the other element to swap
          */
-        public static void swap(List<?> elements, int i, int j) {
+        public static void swap(List<? super Object> elements, int i, int j) {
             Objects.checkIndex(i, elements.size());
             Objects.checkIndex(j, elements.size());
-
-            Collections.swap(elements, i, j);
+            //throw new ExerciseNotCompletedException(); // todo: complete method implementation
+            Object el = elements.get(i);
+            elements.set(i, elements.get(j));
+            elements.set(j, el);
         }
 
     }
